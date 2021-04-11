@@ -1,0 +1,34 @@
+##################################################################
+# Syntax Coloring Map For Liteon LTR329ALS Digital Sensor Library
+##################################################################
+
+##################################################################
+# Datatypes (KEYWORD1)
+##################################################################
+
+LTR329	KEYWORD1
+
+##################################################################
+# Methods and Functions (KEYWORD2)
+##################################################################
+
+begin				KEYWORD2
+activate 			KEYWORD2
+standby 			KEYWORD2
+reset               KEYWORD2
+setGain             KEYWORD2
+getControl			KEYWORD2
+setMeasurementRate	KEYWORD2
+getMeasurementRate	KEYWORD2
+getPartID			KEYWORD2
+getManufacID		KEYWORD2
+readManufacID       KEYWORD2
+readPartID          KEYWORD2
+readRevisionID      KEYWORD2
+readStatus          KEYWORD2
+getData				KEYWORD2
+readLux				KEYWORD2
+getError			KEYWORD2
+readByte			KEYWORD2
+writeByte			KEYWORD2
+readData            KEYWORD2

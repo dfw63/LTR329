@@ -1,0 +1,12 @@
+{
+    "name": "LTR329",
+    "keywords": "sensor, light",
+    "description": "A light sensor library for LTR329",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/dfw63/LTR329"
+    },
+    "frameworks": "arduino",
+    "platforms": "",
+    "examples": "examples/*/*.ino"
+}
