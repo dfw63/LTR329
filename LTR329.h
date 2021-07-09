@@ -121,6 +121,9 @@ public:
 	byte readManufacID( void );
 	// returns the Manufacturer ID
 
+	boolean isvalid( void ); 
+	// returns the validity status of measurement.
+
 	boolean getData();
 	// Gets the 16-bit channel 0 and channel 1 data, stores in _ch0 and _ch1
 	// returns false in case of I2C error, true if successful
@@ -138,6 +141,9 @@ public:
 	// Convert raw data to lux
 	// calls member function to read raw data
 	// returns 0.0 for invalid data
+
+	void autoGain(double);
+	// selects best gain value for the most recent lux value
 
 	byte getError(void);
 	// Upon command failure, corresponding error codes from the Wire library are stored in _error:

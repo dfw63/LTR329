@@ -230,6 +230,11 @@ byte LTR329::readManufacID()
 	return _manufacID;
 }
 
+boolean LTR329::isvalid()
+{
+	return _valid;
+}
+
 boolean LTR329::getData()
 {
 	boolean ret;
@@ -315,11 +320,7 @@ boolean LTR329::readData()
 		}
 	}
 	// check for validity
-	if (boolean ret = readStatus()) 
-	{
-		Serial.print("Gain: "); Serial.print(_gain);
-		Serial.print(" Valid: "); Serial.print(_valid);
-	}
+	ret = readStatus();
 	return ret;
 }
 
@@ -330,26 +331,40 @@ double LTR329::readLux()
 	// For gain settings, see getControl()
 	// integrationTime: integration time in ms, from getMeasurementRate()
 
-	double ratio, lux;
+	double ratio, lux =0.0;
 
 	if ( !readData() )
 	{
-		lux = 0.0;
 		return lux;
 	}
-
-	getMeasurementRate();		// update integration time, required for data normalisation
+	
+	// if higher gain values resulted in invalid (overflow) data, reset gain to lowest value and read raw data again
+	if (!_valid && _gain != gain_1)
+	{
+		reset();
+		setMeasurementRate(_integrationTime, _measurementRate);
+		activate();
+		readData();
+	}
+	getMeasurementRate(); // update integration time, required for data normalisation
 
 	// The sensor indicates an invalid measurement by setting bit 7 in the control reg 0x8c.
 	// This is checked by calling readStatus in the getData member function.
+
+	Serial.print("Gain: ");
+	Serial.print(_gain);
+	Serial.print(" Valid: ");
+	Serial.print(_valid);
+
+	Serial.print(" CH0: ");
+	Serial.print(_ch0);
+	Serial.print(" CH1: ");
+	Serial.print(_ch1);
+
 	if (_valid)
 	{
 		// lux calculation depends on the ratio of channel results
 		ratio = static_cast<double>(_ch1) / (_ch0 + _ch1);
-		Serial.print(" CH0: ");
-		Serial.print(_ch0);
-		Serial.print(" CH1: ");
-		Serial.print(_ch1);
 		Serial.print(" Ratio: ");
 		Serial.print(ratio);
 		Serial.print(" ITime: ");
@@ -364,34 +379,30 @@ double LTR329::readLux()
 		if (ratio < 0.45)
 		{
 			lux = (1.7743 * _ch0 + 1.1059 * _ch1) * factor;
+			autoGain(lux);
 			return lux;
 		}
 		if (ratio < 0.64)
 		{
 			lux = (4.2785 * _ch0 - 1.9548 * _ch1) * factor;
+			autoGain(lux);
 			return lux;
 		}
 		if (ratio < 0.85)
 		{
 			lux = (0.5926 * _ch0 + 0.1185 * _ch1) * factor;
+			autoGain(lux);
 			return lux;
 		}
-		lux = 0.0;
-		return lux;
 	}
-	else
+	else // in case of invalid sensor reading:
 	{
-		Serial.print(" CH0: ");
-		Serial.print(_ch0);
-		Serial.print(" CH1: ");
-		Serial.print(_ch1);
 		Serial.print(" Sum: ");
-		Serial.print(_ch1+_ch0);
+		Serial.print(_ch1 + _ch0);
 		Serial.print(" Overflow: ");
-		Serial.print( _ch1 + _ch0 < 0xffff ? false : true);
-		lux = 0.0;
-		return lux;
+		Serial.print(_ch1 + _ch0 < 0xffff ? false : true);
 	}
+	return lux;
 }
 
 byte LTR329::getError(void)
@@ -405,8 +416,29 @@ byte LTR329::getError(void)
 	return (_error);
 }
 
-// Private functions:
+void LTR329::autoGain(double lux)
+{
+	// double limits[] = {682.0, 1365.0, 8192.0, 16384.0, 32768.0, 65535.0};
+	double limits[] = {600.0, 1300.0, 8192.0, 16384.0, 32768.0, 65535.0};
+	byte gains[] = {7, 6, 3, 2, 1, 0};
 
+	if (!_valid)
+	{
+		_gain = gain_1;
+		return;
+	}
+	for (int i = 0; i < 6; i++)
+	{
+		if (lux < limits[i])
+		{
+			_gain = gains[i];
+			setGain(_gain);
+			return;
+		}
+	}
+
+}
+// Private functions:
 boolean LTR329::readByte(byte address, byte &value)
 {
 	// Reads a byte from a LTR329 address
