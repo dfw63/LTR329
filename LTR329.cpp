@@ -26,6 +26,7 @@ THE SOFTWARE.
 
 #include <LTR329.h>
 #include <Wire.h>
+#include <string>
 
 LTR329::LTR329(void)
 {
@@ -38,7 +39,7 @@ boolean LTR329::begin(void)
 	// Always returns true
 
 	_gain = 0;
-	_valid = false;
+	_valid = true;
 	_newData = false;
 	Wire.begin();
 	getPartID();
@@ -98,10 +99,10 @@ boolean LTR329::setGain(byte gain)
 	{
 		gain = gain_1;
 	}
-
-	// control byte logic
+	// clear control bits other than gain bits 4:2
+	_control &= 0b11;
+	// control byte logic: set new gain bits
 	_control |= gain << 2;
-
 	result = writeByte(LTR329_CONTR, _control);
 	if (result)
 		return (getControl());
@@ -339,13 +340,16 @@ double LTR329::readLux()
 	}
 	
 	// if higher gain values resulted in invalid (overflow) data, reset gain to lowest value and read raw data again
-	if (!_valid && _gain != gain_1)
+	if (!_valid && _gain )
 	{
+		Serial.print("Reset after invalid data\n");
 		reset();
 		setMeasurementRate(_integrationTime, _measurementRate);
 		activate();
 		readData();
 	}
+	autoGain();
+	readData();
 	getMeasurementRate(); // update integration time, required for data normalisation
 
 	// The sensor indicates an invalid measurement by setting bit 7 in the control reg 0x8c.
@@ -379,19 +383,16 @@ double LTR329::readLux()
 		if (ratio < 0.45)
 		{
 			lux = (1.7743 * _ch0 + 1.1059 * _ch1) * factor;
-			autoGain(lux);
 			return lux;
 		}
 		if (ratio < 0.64)
 		{
 			lux = (4.2785 * _ch0 - 1.9548 * _ch1) * factor;
-			autoGain(lux);
 			return lux;
 		}
 		if (ratio < 0.85)
 		{
 			lux = (0.5926 * _ch0 + 0.1185 * _ch1) * factor;
-			autoGain(lux);
 			return lux;
 		}
 	}
@@ -416,23 +417,23 @@ byte LTR329::getError(void)
 	return (_error);
 }
 
-void LTR329::autoGain(double lux)
+void LTR329::autoGain(void)
 {
-	// double limits[] = {682.0, 1365.0, 8192.0, 16384.0, 32768.0, 65535.0};
-	double limits[] = {600.0, 1300.0, 8192.0, 16384.0, 32768.0, 65535.0};
+	uint16_t limits[] = {600, 1300, 8192, 16384, 32768, 65535};
 	byte gains[] = {7, 6, 3, 2, 1, 0};
 
-	if (!_valid)
-	{
-		_gain = gain_1;
-		return;
-	}
+	_gain = gain_1;
+	setGain(_gain);
+	readData();
+	uint16_t chmax = _ch1 + _ch0;
+
 	for (int i = 0; i < 6; i++)
 	{
-		if (lux < limits[i])
+		if (chmax < limits[i])
 		{
 			_gain = gains[i];
 			setGain(_gain);
+			readData();
 			return;
 		}
 	}

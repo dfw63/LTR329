@@ -142,7 +142,7 @@ public:
 	// calls member function to read raw data
 	// returns 0.0 for invalid data
 
-	void autoGain(double);
+	void autoGain();
 	// selects best gain value for the most recent lux value
 
 	byte getError(void);

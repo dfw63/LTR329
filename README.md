@@ -28,5 +28,5 @@ Arduino Library for the LTR329ALS ambient light sensor
 
 
 ## TODO:
-* Some kind of auto-ranging?
+
 
