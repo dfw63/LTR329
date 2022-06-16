@@ -1,0 +1,5 @@
+{
+    "sketch": "examples\\LTR329Example\\LTR329Example.ino",
+    "configuration": "power=on",
+    "board": "sensebox:samd:sb"
+}
