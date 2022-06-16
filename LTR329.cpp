@@ -81,8 +81,9 @@ boolean LTR329::reset()
 	{
 		_control |= 0x02;  // set bit 1 -> SW reset
 	}
+	delay(10);
 	result = writeByte(LTR329_CONTR, _control);
-	delay(100);
+	delay(10);
 	return result;
 }
 
@@ -92,8 +93,9 @@ boolean LTR329::setGain(byte gain)
 	// Sets the gain of LTR329
 	// Default value is 0x00 (= gain_1)
 	// Gain coded in bits 4:2
-
-	boolean result = readByte(LTR329_CONTR, _control);
+	boolean result;
+	if ( ( result = readByte(LTR329_CONTR, _control) ) == false ) 
+		return result;
 	// suppress illegal gain values
 	if (gain == 4 || gain == 5 || gain > 7)
 	{
@@ -103,9 +105,9 @@ boolean LTR329::setGain(byte gain)
 	_control &= 0b11;
 	// control byte logic: set new gain bits
 	_control |= gain << 2;
-	result = writeByte(LTR329_CONTR, _control);
-	if (result)
-		return (getControl());
+	if ( ( result = writeByte(LTR329_CONTR, _control) )== false)
+		return result;
+
 	return result;
 }
 
@@ -131,6 +133,7 @@ boolean LTR329::getControl()
 		// return if successful
 		return true;
 	}
+	Serial.println("getControl: Failure.");
 	return false;
 }
 
@@ -346,10 +349,8 @@ double LTR329::readLux()
 		reset();
 		setMeasurementRate(_integrationTime, _measurementRate);
 		activate();
-		readData();
 	}
 	autoGain();
-	readData();
 	getMeasurementRate(); // update integration time, required for data normalisation
 
 	// The sensor indicates an invalid measurement by setting bit 7 in the control reg 0x8c.
@@ -421,18 +422,40 @@ void LTR329::autoGain(void)
 {
 	uint16_t limits[] = {600, 1300, 8192, 16384, 32768, 65535};
 	byte gains[] = {7, 6, 3, 2, 1, 0};
-
-	_gain = gain_1;
-	setGain(_gain);
-	readData();
+	boolean result;
+	if ( (result=setGain(gain_1) ) == false )
+	{
+		Serial.print("autoGain:");
+		Serial.println("setGain failed");
+	}
+	if ( ( result = readData() ) == false)
+	{
+		Serial.print("autoGain:");
+		Serial.println("readData failed");
+	};
 	uint16_t chmax = _ch1 + _ch0;
+
+	double factor = 1.0 / _timefactor[_integrationTime];
+	factor /= _gainfactor[_gain];
+	
+	chmax *= factor;
+	Serial.print("Autogain:");
+	Serial.print("Gain: ");
+	Serial.print(_gain);
+	Serial.print(" Valid: ");
+	Serial.print(_valid);
+
+	Serial.print(" CH0: ");
+	Serial.print(_ch0);
+	Serial.print(" CH1: ");
+	Serial.print(_ch1);
+	Serial.println("");
 
 	for (int i = 0; i < 6; i++)
 	{
 		if (chmax < limits[i])
 		{
-			_gain = gains[i];
-			setGain(_gain);
+			setGain(gains[i]);
 			readData();
 			return;
 		}

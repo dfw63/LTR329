@@ -165,6 +165,7 @@ private:
 	const double _gainfactor[8] = { 1.0, 2.0, 4.0, 8.0, 0.0, 0.0, 48.0, 96.0};
 	const double _timefactor[8] = { 1, 0.5, 2.0, 4.0, 1.5, 2.5, 3.0, 3.5 };
 	const double _intTimes[8] = { 100.0, 50.0, 200.0, 400.0, 150.0, 250.0, 300.0, 350.0 };
+	const byte intTimes_index[8] = { 1, 0, 4, 2, 5, 6, 7, 4};
 	const double _measTimes[8] = { 50.0, 100.0, 200.0, 500.0, 1000.0, 2000.0, 2000.0, 2000.0 };
 
 	uint16_t _ch0, _ch1;
